@@ -300,7 +300,7 @@ class informe extends Cezpdf {
 				while($y - $maxlins*$fh < $y2)
 				{
 					$maxlins--;
-					printError("<p style=\"color:red\"><b>#PDF ERROR:</b> UNCAUGHT VERTICAL WRAP<br>".$x."+".$fh." exceeds ".$x2.". Rejected line <i>'".$lins[$maxlins]."'</i>.");
+					printError("<p style=\"color:red\"><b>#PDF ERROR:</b> UNCAUGHT VERTICAL WRAP<br>".$y."+".$fh." exceeds ".$y2.". Rejected line <i>'".$lins[$maxlins]."'</i>.");
 				}	
 				if($aliniacio == 'center')
 					$y -= ($h - $fh*$maxlins) / 2;
