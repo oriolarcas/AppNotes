@@ -31,7 +31,7 @@ $ara = getdate();
 $xmlheader = '<'.'?xml version="1.0"[ encoding="(#CHARSET)"]?'.'>'."\n";
 echo $xmlheader;
 
-echo '<'.'?xml-stylesheet href="squelettes/log.xsl" type="text/xsl"?'.'>'."\n";
+echo '<'.'?xml-stylesheet href="../../squelettes/log.xsl" type="text/xsl"?'.'>'."\n";
 echo "<report>\n";
 
 
@@ -343,10 +343,6 @@ if(!$GLOBALS['ERRORS'] && !($GLOBALS['WARNINGS'] && $SHOWWARNINGS) && !$VERBOSE)
 	
 	if($RETURN != false)
 	{
-		if(!$NOLOG)
-		{
-			desaLog();
-		}
 		retorna();
 	}
 

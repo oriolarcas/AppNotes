@@ -63,6 +63,55 @@ function crea_taula($aps)
 	return array($taula,$amb_marca,$num_notes);
 }
 
+function escriu_obser($pdf, $obser, $y)
+{
+	global $marginB, $marginT, $i2cm, $cm2i, $pH, $BOUNDS;
+	$y0 = $y + 0.2;
+	
+	$fh0 = $pdf->getFontHeight(12);
+
+	$y1 = $y0 + $fh0*$i2cm + 0.25;
+	
+	$h = $pH - $y1 - $marginB - $marginT;
+	
+	$text = array(array($obser,10));
+
+	$fits = $pdf->provaQuadreText($text,g2lX(0),g2lY($y1),16*$cm2i,$h*$cm2i,'full',false,0,0);
+
+	if (!$fits)
+		return false;
+	
+	// apply changes
+	$pdf->addText(g2lX(0),g2lY($y0)-$fh0-$pdf->getFontDecender(12),12,'Observacions:');
+
+	if($BOUNDS)
+	{
+		$pdf->liniaTrencada(1);
+		$pdf->rectangle(g2lX(0),g2lY($y1),16*$cm2i,-$h*$cm2i);
+	}
+
+	$pdf->quadreText($text,g2lX(0),g2lY($y1),16*$cm2i,$h*$cm2i,'full',false,0,0);
+	
+	return true;
+}
+
+function escriu_peupagina($pdf, $t_ini, $t_fi)
+{
+	global $marginB, $cm2i, $pW, $dades, $INFO, $numpagina, $about;
+	$pdf->addTextWrap(0,($marginB)*$cm2i - $pdf->getFontHeight(10) - $pdf->getFontDecender(10),$pW*$cm2i,10,$dades[0] . ' ' . $dades[1] . ' ' . $dades[2] . ' - ' . $dades[4] . ' de Primària','center');
+	
+	$fh = $pdf->getFontHeight(10);
+
+	$pdf->addTextWrap(0,($marginB)*$cm2i - $fh - $pdf->getFontHeight(10) - $pdf->getFontDecender(10),$pW*$cm2i,10,'Pàgina ' . $numpagina,'center');
+
+	if($INFO)
+	{
+		$pdf->addTextWrap(0,($marginB - 0.25)*$cm2i - $pdf->getFontHeight(10) - $pdf->getFontDecender(10),$pW*$cm2i,10,$about . ' Runtime: '. round($t_fi - $t_ini,4) .' s','center');
+	}
+
+	$numpagina++;
+}
+
 function escriu()
 {
 	global $arees,$pdf,$dades,$NOHIDE,$taula_actitud,$cm2i,$i2cm,$molttrencada,$pH,$marginB,$marginT,$BOUNDS,$pW,$numpagina,$about,$INFO;
@@ -91,15 +140,6 @@ function escriu()
 		
 		$notes_posades = true;
 		$notes = $area[2]; //explode(',',$area[2]);
-		
-///////////////////////////////
-		/*
-		if (($area[1] == "cascm3" || $area[1] == "cascm4")) {
-			$notes[3] = 5;
-		}
-		*/
-///////////////////////////////
-		
 		
 		for($i = 0;$i < $num_notes;$i++) {
 			printInfo("Nota: ".$notes[$i]);
@@ -235,43 +275,43 @@ function escriu()
 			}
 		}
 		
+		$pagina_obser = false;
+		
 		if(strlen(trim($area[3])) > 0)
 		{
-	
 			//Observacions
-			$y += 0.2;
-	
-			$fh = $pdf->getFontHeight(12);
-			$pdf->addText(g2lX(0),g2lY($y)-$fh-$pdf->getFontDecender(12),12,'Observacions:');
 			
-			$y += $fh*$i2cm + 0.25;
-			
-			$h = $pH - $y - $marginB - $marginT;
-			
-			if($BOUNDS)
+			if (!escriu_obser($pdf, trim($area[3]), $y))
 			{
-				$pdf->liniaTrencada(1);
-				$pdf->rectangle(g2lX(0),g2lY($y),16*$cm2i,-$h*$cm2i);
+				$pagina_obser = true;
 			}
-		
-			$pdf->quadreText(array(array($area[3],10)),g2lX(0),g2lY($y),16*$cm2i,$h*$cm2i,'full',false,0,0);
-	
+			
+			
 		}
 	
 		$t_fi = microtime_float();
 		
-		$pdf->addTextWrap(0,($marginB)*$cm2i - $pdf->getFontHeight(10) - $pdf->getFontDecender(10),$pW*$cm2i,10,$dades[0] . ' ' . $dades[1] . ' ' . $dades[2] . ' - ' . $dades[4] . ' de Primària','center');
-	
-		$fh = $pdf->getFontHeight(10);
-	
-		$pdf->addTextWrap(0,($marginB)*$cm2i - $fh - $pdf->getFontHeight(10) - $pdf->getFontDecender(10),$pW*$cm2i,10,'Pàgina ' . $numpagina,'center');
-	
-		if($INFO)
+		escriu_peupagina($pdf, $t_ini, $t_fi);
+		
+		if ($pagina_obser)
 		{
-			$pdf->addTextWrap(0,($marginB - 0.25)*$cm2i - $pdf->getFontHeight(10) - $pdf->getFontDecender(10),$pW*$cm2i,10,$about . ' Runtime: '. round($t_fi - $t_ini,4) .' s','center');
+			
+			$t_ini = microtime_float();
+			
+			$pdf->newPage();
+			
+			$y = 0;
+			
+			if (!escriu_obser($pdf, trim($area[3]), $y))
+			{
+				printError("<p><b>#PDF ERROR:</b> TEXT TOO LONG<br><br />\nField <i>observacions</i> does not fit in one page.</p>");
+				return false;
+			}
+			
+			$t_fi = microtime_float();
+			
+			escriu_peupagina($pdf, $t_ini, $t_fi);
 		}
-	
-		$numpagina++;
 	}
 }
 ?>

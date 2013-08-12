@@ -19,7 +19,7 @@ while ($al = sql_fetch($res)) {
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
 <head>
-<title>[(#info_SITE_SPIP|textebrut)]</title>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
 [<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
 <INCLURE{fond=inc-head}>
 <script type="text/javascript" src="squelettes/javascript/jquery.progressbar.min.js"></script>
@@ -46,7 +46,7 @@ var curral = 0;
 var maxal = alumnes.length;
 function genera() {
 	$.ajax({
-		url: url+'&id='+alumnes[curral][0]+'&nolog&localdump',
+		url: url+'&id='+alumnes[curral][0]+'&localdump', // &nolog
 		dataType: 'xml',
 		success: function (data) {
 			//$("#info").html(data.length);

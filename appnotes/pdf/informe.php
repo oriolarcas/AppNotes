@@ -40,7 +40,7 @@ function retorna()
 
 function desaLog($logf)
 {
-	$f = fopen($logf,'a');
+	$f = fopen($logf,'w');
 	$log = ob_get_contents()."\n";
 	fwrite($f,$log);
 	fclose($f);
@@ -289,19 +289,12 @@ class informe extends Cezpdf {
 				$fh = $this->getFontHeight($paragraf[1]);
 				$fd = $this->getFontDecender($paragraf[1]);
 				$lins = $this->trencaLinia($paragraf[0],$paragraf[1],$w-7);
-				/*
-				echo "<p>";
-				foreach ($lins as $lin) {
-					echo $lin."<br />";
-				}
-				echo "</p>";
-				*/
 				$maxlins = count($lins);
 				while($y - $maxlins*$fh < $y2)
 				{
 					$maxlins--;
-					printError("<p style=\"color:red\"><b>#PDF ERROR:</b> UNCAUGHT VERTICAL WRAP<br>".$y."+".$fh." exceeds ".$y2.". Rejected line <i>'".$lins[$maxlins]."'</i>.");
-				}	
+					printError("<p style=\"color:red\"><b>#PDF ERROR:</b> UNCAUGHT VERTICAL WRAP<br />".$y."+".$fh." exceeds ".$y2.". Rejected line <i>'".$lins[$maxlins]."'</i></p>.");
+				}
 				if($aliniacio == 'center')
 					$y -= ($h - $fh*$maxlins) / 2;
 				elseif($aliniacio == 'bottom')
@@ -312,7 +305,7 @@ class informe extends Cezpdf {
 					$r = $this->addTextWrap($x,$y-$fh-$fd,$w+1,$paragraf[1],$linia,$justificacio);
 					if(strlen($r) > 0)
 					{
-						printError("<p style=\"color:red\"><b>#PDF ERROR:</b> UNCAUGHT HORIZONTAL WRAP<br>\nRejected <i>'".$r."'</i> from <i>'".$linia."'</i></p>");
+						printError("<p style=\"color:red\"><b>#PDF ERROR:</b> UNCAUGHT HORIZONTAL WRAP<br />\nRejected <i>'".$r."'</i> from <i>'".$linia."'</i></p>");
 					}
 					$y -= $fh;
 				}
@@ -341,6 +334,49 @@ class informe extends Cezpdf {
 			while(strlen(trim($paragraf[0])) > 0);
 		}
 		return $h;
+	}
+	
+	function provaQuadreText($text,$x,$y,$w,$h,$justificacio,$vertical=false,$marge=0,$vora=0,$aliniacio='top')
+	{
+		$w -= $marge * 2;
+		$h -= $marge * 2;
+			
+		$x += $marge;
+		$y -= $marge;
+		
+		$x2 = $x + $w;
+		$y2 = $y - $h;
+		
+		if($vertical)
+		{
+			$y -= $h;
+			foreach($text as $paragraf)
+			{
+				$fh = $this->getFontHeight($paragraf[1]);
+				$fd = $this->getFontDecender($paragraf[1]);
+				$lins = $this->trencaLinia($paragraf[0],$paragraf[1],$h-4);
+				$maxlins = count($lins);
+				if ($x + $maxlins*$fh > $x2)
+				{
+					return false;
+				}					
+			}
+		}
+		else
+		{
+			foreach($text as $paragraf)
+			{
+				$fh = $this->getFontHeight($paragraf[1]);
+				$fd = $this->getFontDecender($paragraf[1]);
+				$lins = $this->trencaLinia($paragraf[0],$paragraf[1],$w-7);
+				$maxlins = count($lins);
+				if ($y - $maxlins*$fh < $y2)
+				{
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 }
