@@ -1,0 +1,102 @@
+[(#REM)
+	Classe
+]
+<?php echo "verifier"; ?>
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<?php
+include_once("appnotes/util.php");
+
+$res = sql_select("*", "classes", "id = [(#ENV{id_classe})]");
+$classe = sql_fetch($res);
+
+$is_admin = [(#SESSION{statut}|=={0minirezo}|?{TRUE,FALSE})];
+$permisos = get_mots_auteur(#SESSION{id_auteur});
+if (!in_array($classe['id_mot'], $permisos) && !$is_admin) {
+	header("Location: [(#URL_PAGE{error403})]");
+	exit();
+}
+
+$ressalta = [(#ENV{mostra_al, -1})];
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_p(RUBRIQUES){id_rubrique=1}{tout}>
+	&gt; <a href="#_p:URL_RUBRIQUE">[(#_p:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p>
+	<BOUCLE_r(RUBRIQUES){id_rubrique}{tout}>
+	&gt; #_r:TITRE
+	</BOUCLE_r>
+	</div>
+
+	<h1><?php echo $classe["nom"]; ?> (<?php 
+$cursos = get_cursos();
+echo $cursos[$classe["curs"]]." ".$classe["classe"];
+?>)</h1>
+	<table style="width:100%;text-align:left;margin-bottom:100px">
+		<tr>
+			<td></td>
+			<th>Alumne</th>
+			<td></td>
+			<th style="width:300px">Àrees</th>
+		</tr>
+<?php
+
+$is_admin = [(#SESSION{statut}|=={0minirezo}|?{TRUE,FALSE})];
+$id_auteur = #SESSION{id_auteur};
+$permisos = get_mots_auteur($id_auteur);
+
+$arees = array();
+$res = sql_select(array("id", "nom", "id_mot"), "arees", "curs = ".($classe["curs"]));
+while ($area = sql_fetch($res)) {
+	array_push($arees, $area);
+}
+
+$res = sql_select("*", "alumnes", "classe = ".($classe["id"]), array(), array("cognom1", "cognom2", "nom"));
+
+$n = 1;
+while ($al = sql_fetch($res)) {
+	$is_tutor = ($al['tutor'] == $id_auteur) || ($al['tutor2'] == $id_auteur);
+	if ($ressalta == $al["id"])
+		echo '<tr class="highlight-row"><td style="text-align:right"><a name="mostra">'.$n.'.</a></td>';
+	else
+		echo '<tr class="'.($n % 2 ? 'odd-row' : 'even-row').'"><td style="text-align:right">'.$n.'.</td>';
+	echo "<td>".$al["nom"]." ".$al["cognom1"]." ".$al["cognom2"]."</td>";
+	echo '<td>';
+	if ($is_tutor || $is_admin)
+		echo '<a href="[(#URL_RUBRIQUE{3})]&id_alumne='.$al['id'].'">Nivell personal</a>';
+	echo '</td>';
+	echo '<td><div class="llista-arees">Àrees...<ul>';
+	foreach($arees as $area) {
+		if (in_array($area['id_mot'], $permisos) || $is_admin || $is_tutor)
+			echo '<li class="activa"><a href="[(#URL_RUBRIQUE{4})]&id_alumne='.$al['id'].'&id_area='.$area['id'].'">'.$area["nom"].'</a></li>';
+		else
+			echo '<li>'.$area["nom"].'</li>';
+	}
+	echo "</ul></div></td></tr>\n";
+	$n++;
+}
+
+?>
+	</table>
+	
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

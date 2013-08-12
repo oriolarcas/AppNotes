@@ -1,0 +1,82 @@
+[(#REM)
+	Informes generats
+]
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<?php
+include_once("appnotes/util.php");
+$res = sql_select("*", "classes", "id = [(#ENV{id_classe})]");
+$classe = sql_fetch($res);
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_p1(RUBRIQUES){id_rubrique=6}{tout}>
+	&gt; <a href="#_p1:URL_RUBRIQUE">[(#_p1:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p1>
+	<BOUCLE_p2(RUBRIQUES){id_rubrique=9}{tout}>
+	&gt; <a href="#_p2:URL_RUBRIQUE">[(#_p2:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p2>
+	<BOUCLE_r(RUBRIQUES){id_rubrique}{tout}>
+	&gt; [(#_r:TITRE|supprimer_numero)]
+	</BOUCLE_r>
+	</div>
+	
+	<h1>Informes generats: <?php echo $classe["nom"]; ?></h1>
+
+<?php
+$fclasse = nom_canonic_classe($id_classe).'_'.$id_classe.'.zip';
+
+if (file_exists('appnotes/dump/'.$fclasse)) {
+?>
+	<p style="border:2px solid #aa0;padding:4px"><img src="#CHEMIN{img/zip.png}" alt="zip" width="70" height="62" /> <a href="<?php echo 'appnotes/dump/'.$fclasse; ?>">Descarrega fitxer Zip amb tots els informes.</a></p>
+<?php
+}
+?>
+
+	<table style="width:100%;text-align:left">
+		<tr>
+			<td></td>
+			<th>Alumne</th>
+			<th style="width:300px">Informe</th>
+		</tr>
+<?php
+$res = sql_select("*", "alumnes", "classe = ".($classe["id"]), array(), array("cognom1", "cognom2", "nom"));
+
+$n = 1;
+while ($al = sql_fetch($res)) {
+	echo '<tr class="'.($n % 2 ? 'odd-row' : 'even-row').'"><td style="text-align:right">'.$n.'.</td>';
+	echo "<td>".$al["nom"]." ".$al["cognom1"]." ".$al["cognom2"]."</td>";
+	echo '<td>';
+	$fal = nom_fitxer_informe($al['id']);
+	if (file_exists('appnotes/dump/'.$fal))
+		echo '<a href="appnotes/dump/'.$fal.'">Descarrega</a>';
+	else
+		echo '<span style="color:#a00">No trobat</a>';
+	echo '</td>';
+	echo "</tr>\n";
+	$n++;
+}
+
+?>
+	</table>	
+
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

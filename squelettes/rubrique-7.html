@@ -1,0 +1,63 @@
+[(#REM)
+	Ajuda
+]
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_h(HIERARCHIE){id_rubrique}>
+	&gt; [<a href="[(#URL_RUBRIQUE)]">(#_h:TITRE|supprimer_numero)</a>]
+	</BOUCLE_h>
+	<BOUCLE_r(RUBRIQUES){id_rubrique}{tout}>
+	&gt; [(#_r:TITRE|supprimer_numero)]
+	</BOUCLE_r>
+	</div>
+	
+	<BOUCLE_t(RUBRIQUES){id_rubrique}{tout}>
+	<h1>[(#_t:TITRE|supprimer_numero)]</h1>
+	
+	<B_s>
+	<BOUCLE_s(RUBRIQUES){id_parent}>
+	[<p><a style="font-weight:bold" href="[(#URL_RUBRIQUE)]">(#TITRE|supprimer_numero):</a> [(#TEXTE|textebrut)]</p>]
+	<B_sa>
+	<ul>
+	<BOUCLE_sa(ARTICLES){id_rubrique}>
+	[<li><a href="[(#URL_ARTICLE)]">(#TITRE|supprimer_numero)</a></li>]
+	</BOUCLE_sa>
+	</ul>
+	</B_a>
+	</BOUCLE_s>
+
+	#_t:TEXTE
+	
+	<B_a>
+	<p style="font-weight:bold">Continguts:</p>
+	<ul>
+	<BOUCLE_a(ARTICLES){id_rubrique}>
+	[<li><a href="[(#URL_ARTICLE)]">(#TITRE|supprimer_numero)</a>[: (#CHAPO|textebrut)]</li>]
+	</BOUCLE_a>
+	</ul>
+	</B_a>
+	
+	</BOUCLE_t>
+
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

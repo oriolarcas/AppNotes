@@ -1,0 +1,198 @@
+[(#REM)
+	Àrea
+]
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+<INCLURE{fond=inc-autorisation}{id_alumne}{id_area}>
+<?php
+include_once("appnotes/util.php");
+
+$id_alumne = [(#ENV{id_alumne})];
+$id_area = [(#ENV{id_area})];
+$actituds = get_actituds();
+$ispost = false;
+
+$c = sql_countsel("informes", array("alumne = ".$id_alumne, "area = ".$id_area));
+if ($c != 1) {
+	header("Location: [(#URL_PAGE{error500})]"); exit();
+}
+
+if (isset($_POST["savereturn"]) || isset($_POST["segarea"]) || isset($_POST["segalumne"])) {
+	$res = sql_select("id", "plantilles",
+		array("area = ".$id_area, "ordre > 0"),
+		array(), "ordre");
+	$i = 0;
+	while($tema = sql_fetch($res)) {
+		if (isset($_POST["nota".$i])) {
+			$nota = $_POST["nota".$i];
+			$updok = sql_updateq("notes",
+				array("nota" => $nota),
+				array("alumne = ".$id_alumne, "tema = ".$tema['id']));
+			if (!$updok)
+				break;
+		}
+		$i++;
+	}
+	if ($updok) {
+		$nact = array_fill(0, count($actituds), 0);
+		for ($i = 0; $i < count($actituds); $i++) {
+			if (isset($_POST["act".$i]))
+				$nact[$i] = 1;
+		}
+		$nact = implode(",", $nact);
+	
+		$nobser = "";
+		if (isset($_POST["obser"]))
+			$nobser = $_POST["obser"];
+		$updok = (sql_updateq("informes",
+			array(
+				"actitud" => $nact,
+				"obser" => $nobser),
+			array(
+				"alumne = ".$id_alumne,
+				"area = ".$id_area)
+				) !== false);
+	}
+	
+	$ispost = true;
+	
+	if ($updok) {
+		if (isset($_POST["savereturn"])) {
+			$al = sql_fetsel("classe", "alumnes", "id = ".$id_alumne);
+			header("Location: [(#URL_RUBRIQUE{2})]&id_classe=".$al['classe']);
+			exit();
+		} else if (isset($_POST["segarea"])) {
+			$segarea = segarea($id_area);
+			if ($segarea != -1) {
+				$id_area = $segarea;
+			}
+		} else if (isset($_POST["segalumne"])) {
+			$segal = segalumne($id_alumne);
+			if ($segal != -1) {
+				$id_alumne = $segal;
+			}
+		}
+	}
+}
+
+$al = sql_fetsel("*", "alumnes", "id = ".$id_alumne);
+$area = sql_fetsel("*", "arees", "id = ".$id_area);
+$classe = sql_fetsel(array("id", "nom"), "classes", "id = ".$al["classe"]);
+
+$is_admin = [(#SESSION{statut}|=={0minirezo}|?{TRUE,FALSE})];
+$auto = false;
+if ($is_admin) {
+	$auto = true;
+} else {
+	$id_auteur = #SESSION{id_auteur};
+	$auto = check_access($al['id'], $area['id'], -1, $id_auteur);
+}
+if (!$auto) {
+	header("Location: [(#URL_PAGE{error403})]"); exit();
+}
+?>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_p1(RUBRIQUES){id_rubrique=1}{tout}>
+	&gt; <a href="#_p1:URL_RUBRIQUE">[(#_p1:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p1>
+	<BOUCLE_p2(RUBRIQUES){id_rubrique=2}{tout}>
+	&gt; <a href="#_p2:URL_RUBRIQUE&id_classe=<?php echo $classe['id']; ?>">#_p2:TITRE (<?php echo $classe["nom"]; ?>)</a>
+	</BOUCLE_p2>
+	&gt; <?php echo $area["nom"]; ?>
+	</div>
+	
+	<h1><?php echo $al["nom"]." ".$al["cognom1"]." ".$al["cognom2"]; ?></h1>
+<?php if ($ispost && $updok) { ?>
+	<p style="color:#080">El nou text s'ha desat correctament.</p>
+<?php 
+$al["nivellpers"] = $_POST["nivellpersonal"];
+} else if ($ispost) { ?>
+	<p style="color:#800">Error en desar el text!</p>
+<?php } ?>
+	<h2><?php echo $area["nom"]; ?></h2>
+	<form action="[(#URL_RUBRIQUE{4})]&id_alumne=<?php echo $id_alumne; ?>&id_area=<?php echo $id_area; ?>" method="post">
+<?php
+
+$valor = get_valoracions();
+
+$informe = sql_fetsel(array("actitud", "obser"), "informes",
+	array(
+		"alumne = ".$al['id'],
+		"area = ".$area['id']
+	)
+);
+
+$actitud = explode(",", $informe["actitud"]);
+$obser = $informe["obser"];
+
+$res = sql_select("*", "plantilles", "area = ".$area["id"], array(), "ordre");
+
+echo '<ol>';
+
+$n = 0;
+while($tema = sql_fetch($res)) {
+	if ($tema["ordre"] > 0) {
+		$nota = sql_fetsel("*", "notes", array("alumne = ".$al["id"], "tema = ".$tema["id"]));
+		
+		echo '<li class="strongtext"><p>'.htmlentities($tema["titol"]).'</p>';
+		echo '<p class="normaltext">'.htmlentities($tema["text"]).'</p>';
+		echo '<p class="normaltext" style="text-align:center">';
+		foreach($valor as $numv => $nomv) {
+			echo '<label><input type="radio" name="nota'.($tema["ordre"]-1).'" value="'.$numv.'" '.
+			($nota['nota'] == $numv ? 'checked="checked"' : '').
+			' /> '.$nomv.'</label>';
+		}
+		echo '</p></li>';
+		$n++;
+	}
+}
+
+echo '</ol>';
+
+echo '<p class="strongtext">Actitud:</p>';
+echo '<p style="text-align:center">';
+foreach($actituds as $numa => $noma) {
+	echo '<label><input type="checkbox" name="act'.$numa.'" value="1" '.
+		($actitud[$numa] == '1' ? 'checked="checked"' : '').' /> '.
+		$noma.'</label>';
+}
+echo '</p>';
+
+echo '<p class="strongtext">Observacions:</p>';
+echo '<p style="text-align:center"><textarea name="obser" rows="3" cols="60">'.$obser.'</textarea></p>';
+
+?>
+
+	<p style="text-align:right">
+		<a href="[(#URL_RUBRIQUE{2})]&id_classe=<?php echo $classe['id']; ?>">Ignora els canvis i torna enrere</a>
+		<input type="submit" name="savereturn" value="Desa i torna enrere" />
+<?php if (segarea($area["id"]) != -1) { ?>
+		<input type="submit" name="segarea" value="Desa i següent àrea &gt;&gt;" />
+<?php } ?>
+<?php if (segalumne($al["id"]) != -1) { ?>
+		<input type="submit" name="segalumne" value="Desa i següent alumne &gt;&gt;" />
+<?php } ?>
+	</p>
+	</form>
+	
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

@@ -1,0 +1,17 @@
+<?php
+$id_alumne = (int)[(#ENV{id_alumne}|sinon{-1})];
+$id_area = (int)[(#ENV{id_area}|sinon{-1})];
+$id_classe = (int)[(#ENV{id_classe}|sinon{-1})];
+$is_admin = [(#SESSION{statut}|=={0minirezo}|?{TRUE,FALSE})];
+$auto = false;
+if ($is_admin) {
+	$auto = true;
+} else {
+	include_once("appnotes/util.php");
+	$id_auteur = #SESSION{id_auteur};
+	$auto = check_access($id_alumne, $id_area, $id_curs, $id_auteur);
+}
+if (!$auto) {
+	header("Location: [(#URL_PAGE{error403})]"); exit();
+}
+?>

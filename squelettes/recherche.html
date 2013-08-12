@@ -1,0 +1,58 @@
+[(#REM)
+	Cerca
+]
+<INCLURE{fond=inc-verifier}>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<?php
+include_once("appnotes/util.php");
+$cerca = "[(#ENV{cerca})]";
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	</div>
+	
+	<h1>Cerca</h1>
+	
+	<h2>Resultats per "<?php echo $cerca; ?>":</h2>
+	
+	<table>
+<?php
+
+//"SELECT * FROM `alumnes` WHERE `nom` LIKE '%".$text."%' OR `cognom1` LIKE '%".$text."%' OR `cognom2` LIKE '%".$text."%' ORDER BY `cognom1`"
+
+	$res = sql_select("*", "alumnes", "nom LIKE '%".$cerca."%' OR cognom1 LIKE '%".$cerca."%' OR cognom2 LIKE '%".$cerca."%'", array(), "cognom1");
+	$num = 0;
+	while($r = sql_fetch($res)) {
+		$num++;
+		echo '<tr>';
+		echo '<td>'.$num.'. '.$r['cognom1'].' '.$r['cognom2'].', '.$r['nom'].'</td>';
+		echo '<td>[<a href="[(#URL_PAGE{informe})]&id='.$r['id'].'&nolog">Veure informe</a>]</td>';
+		echo '<td>[<a href="[(#URL_RUBRIQUE{2})]&id_classe='.$r['classe'].'&mostra_al='.$r['id'].'#mostra">Modificar informe</a>]</td>';
+		echo '</tr>';
+		$found = true;
+	}
+	if ($num == 0)
+		echo '<tr><td>Cap resultat</td></tr>';
+?>
+	</table>
+
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

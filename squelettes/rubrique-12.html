@@ -1,0 +1,67 @@
+[(#REM)
+	Alumnes
+]
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_p(RUBRIQUES){id_rubrique=5}{tout}>
+	&gt; <a href="#_p:URL_RUBRIQUE">[(#_p:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p>
+	<BOUCLE_r(RUBRIQUES){id_rubrique}{tout}>
+	&gt; [(#_r:TITRE|supprimer_numero)]
+	</BOUCLE_r>
+	</div>
+	
+	<h1>Alumnes</h1>
+
+	<BOUCLE_seccions(RUBRIQUES){id_rubrique=16}{tout}>
+	<h2><a href="#URL_RUBRIQUE">[(#TITRE|supprimer_numero)]</a></h2>
+	[<p>(#TEXTE)</p>]
+	</BOUCLE_seccions>
+	
+	<h2>Modifica</h2>
+	
+	<table style="width:100%;text-align:left">
+		<tr>
+			<th>Curs</th>
+			<th>A</th>
+			<th>B</th>
+		</tr>
+<?php
+include_once("ecrire/base/abstract_sql.php");
+include_once("appnotes/util.php");
+
+$cursos = get_cursos();
+
+foreach($cursos as $i => $c) {
+	echo '<tr><td>'.$c.'</td>';
+	$res = sql_select(array("id", "nom"), "classes", "curs = ".$i, array(), "classe");
+	while($r = sql_fetch($res)) {
+		echo '<td><a href="[(#URL_RUBRIQUE{17})]&id_classe='.$r['id'].'">'.$r['nom'].'</a></td>';
+	}
+	echo '</tr>';
+}
+?>
+	</table>
+
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

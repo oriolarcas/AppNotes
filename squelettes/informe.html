@@ -1,0 +1,387 @@
+[(#REM)
+	Impressió
+]
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{0}
+<?php
+
+require_once("appnotes/pdf/informe.php");
+
+$ruta_volcat = 'appnotes/dump';
+
+$rutalog = 'appnotes/dump/pdf.xml';
+
+$about = "Generador de PDF per l'Institut Costa i Llobera.";
+$htmlabout = 'Generador de PDF per l\'IES Costa i Llobera.';
+/*
+$mesos = array(1=>'de gener',2=>'de febrer',3=>'de març',4=>'d\'abril',
+	5=>'de maig',6=>'de juny',7=>'de juliol',8=>'d\'agost',
+	9=>'de setembre',10=>'d\'octubre',11=>'de novembre',12=>'de desembre');
+*/
+$i2cm = 0.0352;
+$cm2i = 28.4645;
+
+$molttrencada = array(3,12);
+
+ob_start();
+
+$ara = getdate();
+
+$xmlheader = '<'.'?xml version="1.0"[ encoding="(#CHARSET)"]?'.'>'."\n";
+echo $xmlheader;
+
+echo '<'.'?xml-stylesheet href="squelettes/log.xsl" type="text/xsl"?'.'>'."\n";
+echo "<report>\n";
+
+
+echo '<date>'.$ara['mday'] . '/' . $ara['mon'] . '/' . $ara['year'] . ' ' . $ara['hours'] . ':' . $ara['minutes'] . ':' . $ara['seconds']."</date>\n";
+
+echo "<flags>\n";
+
+$VERBOSE = valorParametre('verbose',false,true);
+if($VERBOSE) echo '<flag name="verbose">on</flag>'."\n";
+
+$SHOWERRORS = valorParametre('showerrors',false,true) || $VERBOSE;
+if($SHOWERRORS) echo '<flag name="showerrors">on</flag>'."\n";
+
+$SHOWWARNINGS = valorParametre('showwarnings',false,true) || $VERBOSE;
+if($SHOWWARNINGS) echo '<flag name="showwarnings">on</flag>'."\n";
+
+$INFO = valorParametre('info',false,true);
+if($INFO) echo '<flag name="info">on</flag>'."\n";
+
+$NOLOG = valorParametre('nolog',false,true);
+if($NOLOG) echo '<flag name="nolog">on</flag>'."\n";
+
+$LOGONERROR = valorParametre('logonerror',true,true);
+if($NOLOG) echo '<flag name="logonerror">on</flag>'."\n";
+
+//Mostra marques al voltant dels camps enquadrats
+$BOUNDS = valorParametre('bounds',false,true);
+if($BOUNDS) echo '<flag name="bounds">on</flag>'."\n";
+
+//No oculta els apartats de les àrees sense nota
+$NOHIDE = valorParametre('nohide',false,true);
+if($NOHIDE) echo '<flag name="nohide">on</flag>'."\n";
+
+//Només la portada
+$FIRSTONLY = valorParametre('firstonly',false,true);
+if($FIRSTONLY) echo '<flag name="firstonly">on</flag>'."\n";
+
+//Desar-ho en el disc local (LOCALDUMP = on => INFO = on)
+$LOCALDUMP = valorParametre('localdump',false,true);
+if($LOCALDUMP) echo '<flag name="localdump">on</flag>'."\n";
+
+//En acabar descarregar PDF
+$DOWNLOAD = valorParametre('download',false,true);
+if($DOWNLOAD) echo '<flag name="download">on</flag>'."\n";
+
+echo "</flags>\n";
+
+$GLOBALS['ERRORS'] = false;
+$GLOBALS['WARNINGS'] = false;
+
+echo "<messages>\n";
+
+//Obtenir plantilles a partir de les ï¿½rees
+$id = [(#ENV{id})]; //valorParametre('id',false);
+if($id === false)
+{
+	printError("CRITICAL PARAMETER UNSPECIFIED<br />Missing <i>id</i> argument.");
+}
+
+printInfo("<p><strong>ID: ".$id."</strong></p>");
+
+$t_iniT = microtime_float();
+
+$pdf = new informe('a4','portrait');
+
+$pdf -> ezSetMargins(2*$cm2i,2*$cm2i,3*$cm2i,2*$cm2i);
+
+$marginL = 3.5;
+$marginR = 2.5;
+$marginT = 2;
+$marginB = 2;
+$pW = 21;
+$pH = 29.7;
+
+$img_escut = array('src'=>'appnotes/pdf/escut.png','x'=>1,'w'=>2,'h'=>5.5,'qualitat'=>95);
+$img_escut['y'] = ($pH - $img_escut['h']) / 2;
+
+$mainFont = 'appnotes/pdf/pdf/fonts/Helvetica.afm';
+
+$diff = array(
+	192=>'Agrave',193=>'Aacute',199=>'Ccedilla',
+	200=>'Egrave',201=>'Eacute',205=>'Iacute',
+	207=>'Idieresis',209=>'Ntilde',210=>'Ograve',
+	211=>'Oacute',218=>'Uacute',220=>'Udieresis',
+	224=>'agrave',225=>'aacute',231=>'ccedilla',
+	232=>'egrave',233=>'eacute',237=>'iacute',
+	239=>'idieresis',241=>'ntilde',242=>'ograve',
+	243=>'oacute',250=>'uacute',252=>'udieresis'
+	);
+
+// CHAPUZA CHUNGA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+//$pdf->selectFont($mainFont,array('encoding'=>'ISO-8859-15','differences'=>$diff));
+$pdf->selectFont($mainFont,array('encoding'=>'UTF-8','differences'=>$diff));
+
+/********************************************************************
+ *    1/ Portada: nivell personal                                   *
+ ********************************************************************/
+
+$t_ini = microtime_float();
+
+$id_al = $id;
+
+if($id_al === false)
+{
+	echo "CRITICAL PARAMETER NOT FOUND<br />Error while retrieving <i>id_al</i> from database.";
+	$GLOBALS['ERRORS'] = true;
+	ob_end_flush();
+	exit();
+}
+
+// dades($id) Retorna un array amb les dades de l'alumne id
+// dades($id) = array(Nom, Cognom1, Cognom2, nivell personal, Nom Classe, Curs, array(Nom tutors))
+
+$dades = dades($id_al);
+// dades_informe($id) Retorna un array amb les dades de l'avaluació id
+// (aquelles que introdueixen els professors)
+// format(0,1): data
+$dades_informe = dades_informe();
+
+$y = 0;
+
+$fh = $pdf->getFontHeight(14);
+$fd = $pdf->getFontDecender(14);
+
+//Nom
+$pdf->addText(g2lX(0),g2lY($y) - $fh - $fd,14,$dades[0] . ' ' . mb_strtoupper($dades[1] . ' ' . $dades[2],'ISO-8859-15'));
+
+$y += $fh * $i2cm;
+
+$cursos = get_cursos();
+
+//Curs i data
+$pdf->addText(g2lX(0),g2lY($y) - $fh - $fd,14,mb_strtoupper($dades[4],'ISO-8859-15') . ' - ' . $cursos[$dades[5]] . ' de Primària');
+
+$pdf->addTextWrap(g2lX(0),g2lY($y) - $fh - $fd,($pW - $marginL - $marginR)*$cm2i,14,$dades_informe[0],'right');
+
+$y += $fh * $i2cm;
+
+/*
+if($avui['mon'] <= 6)
+{
+	//El curs va començar l'any passat:
+	$curs = 'Curs ' . ($avui['year'] - 1) . ' - ' . $avui['year'];
+}
+else
+{
+	//El curs ha començat aquest any:
+	$curs = 'Curs ' . $avui['year'] . ' - ' . ($avui['year'] + 1);
+}
+*/
+
+$y += $fh * $i2cm * 1;
+
+if ($dades[5] == "6")
+	$pdf->addText(g2lX(0),g2lY($y) - $fh - $fd,14,'COMENTARIS DE TUTORIA');
+else
+	$pdf->addText(g2lX(0),g2lY($y) - $fh - $fd,14,'NIVELL PERSONAL');
+
+$y += $fh * $i2cm * 2;
+
+$fh = $pdf->getFontHeight(12);
+$fd = $pdf->getFontDecender(12);
+
+$dades[3] = str_replace("\r\n","\n",$dades[3]);
+$dades[3] = str_replace("\r","\n",$dades[3]);
+
+$linies = explode("\n",$dades[3]);
+
+array_walk($linies, 'afegeixFormat', (strlen($dades_informe[3]) >= 3000 ? 11 : 12));
+
+$y += $pdf->filaTextVariable($linies,g2lX(0),g2lY($y),($pW - $marginL - $marginR)*$cm2i,'full',0) * $i2cm;
+
+$y += $fh * 2 * $i2cm;
+
+//Tutors:
+
+$x = 0;
+
+foreach($dades[6] as $tutor)
+{
+	$pdf->addTextWrap(g2lX(0),g2lY($y) - $fh - $fd,($pW - $marginL - $marginR - $x)*$cm2i,14,$tutor,'right');
+	$x += 1.5 + $pdf->getTextWidth(14,$tutor) * $i2cm;
+}
+
+//Escut (només a la portada)
+
+$pngimg = imagecreatefrompng($img_escut['src']);
+
+$pdf->addImage($pngimg,$img_escut['x']*$cm2i,($pH - $img_escut['y'] - $img_escut['h'])*$cm2i,
+	$img_escut['w']*$cm2i,$img_escut['h']*$cm2i,$img_escut['qualitat']);
+imagedestroy($pngimg);
+
+$t_fi = microtime_float();
+
+if($INFO)
+{
+	$pdf->addTextWrap(0,($marginB - 0.25)*$cm2i - $pdf->getFontHeight(10) - $pdf->getFontDecender(10),$pW*$cm2i,10,$about . ' Runtime: '. round($t_fi - $t_ini,4) ." s",'center');
+}
+
+if(!$FIRSTONLY)
+{
+
+/********************************************************************
+ *    2/ Informes per àrees                                         *
+ ********************************************************************/
+
+// arees($id) Retorna un array amb les arees de l'alumne id
+// format(0,6): Nom area, Codi area, Quali. Area (array), observacions, actitud, id de la qualif, plantilla
+
+$arees = arees($id);
+
+$marginL = 2.5;
+$marginR = 2.5;
+$marginT = 2;
+$marginB = 2;
+
+$numpagina = 2;
+
+$w = 16;
+
+$taula_actitud = array('nfil'=>7,'ncol'=>7,'x'=>0,'minh'=>1,'marges'=>0.1,'espaiat'=>0.1,
+		'rows'=>
+			array(0 => array('h'=>0.7,'w'=>array($w*0.124069076,$w*0.097776605,$w*0.118407435,$w*0.176714895,$w*0.234954714,$w*0.124021727,$w*0.124055548),
+				'col'=>array(
+				0=>array(array(array('Actitud:',12)),array('justificacio'=>'center','aliniaciov'=>'center','vertical'=>false)),
+				1=>array(array(array('Atenta',10)),array('justificacio'=>'center','aliniaciov'=>'center','vertical'=>false)),
+				2=>array(array(array('Passiva',10)),array('justificacio'=>'center','aliniaciov'=>'center','vertical'=>false)),
+				3=>array(array(array('Interessada',10)),array('justificacio'=>'center','aliniaciov'=>'center','vertical'=>false)),
+				4=>array(array(array('Desinteressada',10)),array('justificacio'=>'center','aliniaciov'=>'center','vertical'=>false)),
+				5=>array(array(array('D\'esforç',10)),array('justificacio'=>'center','aliniaciov'=>'center','vertical'=>false)),
+				6=>array(array(array('Variable',10)),array('justificacio'=>'center','aliniaciov'=>'center','vertical'=>false))
+				)
+			)
+		)
+	);
+
+$informe = "appnotes/pdf/informes/primaria1.php";
+
+if(!file_exists($informe)) {
+	printError("FILE NOT FOUND<br />\nTemplate file <i>'".$informe."'</i> not found on templates directory.");
+} else {
+	/*
+	 * Inclusió de la plantilla
+	 * 
+	 * Proporciona: escriu()
+	 */
+
+	require_once($informe);
+
+	escriu();
+}
+
+} //fi !FIRSTONLY
+
+// Full en blanc al final per tenir fulls parells (millor per impressió a doble cara
+if (!$GLOBALS['ERRORS'] && $numpagina % 2 == 0) {
+	$pdf->newPage();
+	$numpagina++;
+}
+
+$t_fiT = microtime_float();
+printInfo('<p>Runtime: '.round($t_fiT - $t_iniT,4).' s.</p>');
+
+if(!$GLOBALS['ERRORS'])
+{
+	if($LOCALDUMP)
+	{
+		//Desar localment:
+		$pdfstream = $pdf->output();
+		
+		$FILENAME = nom_fitxer_informe($id); //'i'.$id.'.pdf';
+		
+		if(file_exists($ruta_volcat . '/' . $FILENAME)) {
+			unlink($ruta_volcat . '/' . $FILENAME);
+		}
+
+		printInfo("<p><b>#PDF INFO:</b> CREATING FILE<br />\nCreating <i>'".$ruta_volcat . '/' . $FILENAME."'</i>.</p>");
+		
+		$f = fopen($ruta_volcat . '/' . $FILENAME,'w');
+		
+		if($f === false) {
+			printError("COULDN'T OPEN FILE<br />\nError while opening <i>'".$FILENAME."'</i> in 'w' mode.");
+		} else if(!fwrite($f,$pdfstream)) {
+			printError("COULDN'T SAVE FILE<br />\nError while writing <i>'".$FILENAME."'</i> in 'w' mode.");
+		} else if(!fclose($f)) {
+			printError("COULDN'T CLOSE FILE<br />\nError while closing <i>'".$FILENAME."'</i> in 'w' mode.");
+		} else {
+			printInfo("FILE CREATED<br />\nFile <i>'".$FILENAME."'</i> was created succesfully.");
+		}
+	}
+}
+else
+{
+	$NOLOG = false;
+	printInfo("SKIPPING DUMP<br />Dump was skipped due to some errors.");
+}
+
+echo "</messages>\n</report>\n";
+
+if(!$NOLOG)
+	desaLog($rutalog);
+
+if(!$GLOBALS['ERRORS'] && !($GLOBALS['WARNINGS'] && $SHOWWARNINGS) && !$VERBOSE) {
+	//2/ Per a descarregar manualment:
+	//$pdf->ezStream(array('Content-Disposition'=>'prova.pdf'));
+	
+	ob_end_clean();
+	
+	if($RETURN != false)
+	{
+		if(!$NOLOG)
+		{
+			desaLog();
+		}
+		retorna();
+	}
+
+	if ($DOWNLOAD) {
+		$pdfdata = $pdf->output();
+
+		//Veure en el navegador:
+		?>#HTTP_HEADER{"Content-type: application/pdf"}<?php
+		header("Content-Disposition: attachment; filename=informe.pdf");
+		header("Content-Length: ".strlen(ltrim($pdfdata)));
+		echo $pdfdata;
+	} else {
+		// només resultat
+		?>[(#HTTP_HEADER{Content-type: text/xml[; charset=(#CHARSET)]})]<?php
+		echo $xmlheader;
+		echo "<result>ok</result>\n";
+	}
+} else {
+	//Errors o avisos
+	?>[(#HTTP_HEADER{Content-type: text/xml[; charset=(#CHARSET)]})]<?php
+	
+	if ($VERBOSE || ($GLOBALS['ERRORS'] && $SHOWERRORS) || ($GLOBALS['WARNINGS'] && $SHOWWARNINGS))
+		ob_end_flush();
+	else {
+		ob_end_clean();
+		echo $xmlheader;
+		echo "<report>\n";
+		if (!$GLOBALS['ERRORS'])
+			echo "<result>ok</result>\n";
+		else
+			echo "<result>error</result>\n";
+			echo "<id>".$id."</id>\n";
+			echo "<pdf>".nom_fitxer_informe($id)."</pdf>\n";
+		echo "</report>";
+	}
+}
+
+?>

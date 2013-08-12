@@ -1,0 +1,79 @@
+[(#REM)
+	Nivell personal
+]
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+<INCLURE{fond=inc-autorisation}{id_alumne}>
+<?php
+include_once("appnotes/util.php");
+$al = sql_fetsel("*", "alumnes", "id = [(#ENV{id_alumne})]");
+$classe = sql_fetsel(array("id", "nom"), "classes", "id = ".$al["classe"]);
+
+$ispost = false;
+
+if (isset($_POST["nivellpersonal"])) {
+	$ispost = true;
+	$updok = (sql_updateq("alumnes", array("nivellpers" => $_POST["nivellpersonal"]), "id = ".$al["id"]) !== false);
+	
+	if ($updok && isset($_POST["sendreturn"])) {
+		header("Location: [(#URL_RUBRIQUE{2})]&id_classe=".$classe['id']);
+		exit();
+	}
+}
+?>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_p1(RUBRIQUES){id_rubrique=1}{tout}>
+	&gt; <a href="#_p1:URL_RUBRIQUE">[(#_p1:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p1>
+	<BOUCLE_p2(RUBRIQUES){id_rubrique=2}{tout}>
+	&gt; <a href="#_p2:URL_RUBRIQUE&id_classe=<?php echo $classe['id']; ?>">#_p2:TITRE (<?php echo $classe["nom"]; ?>)</a>
+	</BOUCLE_p2>
+	<BOUCLE_r(RUBRIQUES){id_rubrique}{tout}>
+	&gt; #_r:TITRE
+	</BOUCLE_r>
+	</div>
+	
+	<h1><?php echo $al["nom"]." ".$al["cognom1"]." ".$al["cognom2"]; ?></h1>
+	
+<?php if ($ispost && $updok) { ?>
+	<p style="color:#080">El nou text s'ha desat correctament.</p>
+<?php 
+$al["nivellpers"] = $_POST["nivellpersonal"];
+} else if ($ispost) { ?>
+	<p style="color:#800">Error en desar el text!</p>
+<?php } ?>
+	<p>Nivell personal:</p>
+
+	<form action="#SELF" method="post">
+	<div>
+	<textarea name="nivellpersonal" rows="10" cols="80"><?php echo $al["nivellpers"]; ?></textarea>
+	</div>
+	<p style="text-align: right">
+		<a href="[(#URL_RUBRIQUE{2})]&id_classe=<?php echo $classe['id']; ?>">Ignora els canvis i torna enrere</a>
+		<input type="submit" name="send" value="Desa canvis"/>
+		<input type="submit" name="sendreturn" value="Desa canvis i torna enrere"/>
+	</p>
+	</form>
+	</form>
+
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

@@ -1,0 +1,140 @@
+[(#REM)
+	Modificar àrea
+]
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+<?php
+include_once("appnotes/util.php");
+
+$id_area = [(#ENV{id_area})];
+
+$updok = true;
+
+if (isset($_POST['savereturn'])) {
+	foreach($_POST as $var => $val) {
+		if ($var == "nomarea") {
+			$updok = $updok && (sql_updateq("arees", array("nom" => $val), "id = ".$id_area) !== false);
+		} else if (substr($var, 0, 5) == "titol") {
+			$id_tema = substr($var, 5);
+			$updok = $updok && (sql_updateq("plantilles", array("titol" => $val), "id = ".$id_tema) !== false);
+		} else if (substr($var, 0, 4) == "text") {
+			$id_tema = substr($var, 4);
+			$updok = $updok && (sql_updateq("plantilles", array("text" => $val), "id = ".$id_tema) !== false);
+		}
+	}
+	if ($updok) {
+		header("Location: [(#URL_RUBRIQUE{8})]");
+		exit();
+	}
+}
+if (isset($_POST['del_x']) && isset($_POST['del_y'])) {
+	$max_ordre = sql_fetsel('MAX(ordre)', 'plantilles', 'area = '.$id_area);
+	$max_ordre = array_shift($max_ordre);
+	$id_max = sql_fetsel('id', 'plantilles', array('area = '.$id_area, 'ordre = '.$max_ordre));
+	$updok = sql_delete('plantilles', 'id = '.$id_max['id']);
+}
+if (isset($_POST['add_x']) && isset($_POST['add_y'])) {
+	$num_temes = sql_countsel('plantilles', 'area = '.$id_area);
+	$updok = sql_insertq('plantilles', array(
+		'area' => $id_area,
+		'ordre' => $num_temes,
+		'titol' => '<titol>',
+		'text' => '<text>',
+		'buit' => 0));
+}
+
+$area = sql_fetsel("*", "arees", "id = ".$id_area);
+$cursos = get_cursos();
+?>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+<style type="text/css">
+div.afegeix {
+	float:right;
+	border: 1px solid #080;
+	background-color: #afa;
+	padding:2px;
+	cursor: pointer;
+}
+div.elimina {
+	float:right;
+	border: 1px solid #800;
+	background-color: #faa;
+	padding:2px;
+	cursor: pointer;
+}
+</style>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_p1(RUBRIQUES){id_rubrique=6}{tout}>
+	&gt; <a href="#_p1:URL_RUBRIQUE">[(#_p1:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p1>
+	<BOUCLE_p2(RUBRIQUES){id_rubrique=8}{tout}>
+	&gt; <a href="#_p2:URL_RUBRIQUE">[(#_p2:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p2>
+	&gt; <?php echo $area["nom"].' ('.$cursos[$area['curs']].')'; ?>
+	</div>
+	
+	<h1><?php echo $area["nom"].' ('.$cursos[$area['curs']].')'; ?></h1>
+
+<?php if (!$updok) { ?>
+	<p style="color:#800">Error en desar els canvis!</p>
+<?php } ?>
+
+	<form action="[(#URL_RUBRIQUE{14})]&id_alumne=<?php echo $id_alumne; ?>&id_area=<?php echo $id_area; ?>" method="post">
+
+	<p>Nom: <input name="nomarea" type="text" value="<?php echo $area['nom']; ?>" /></p>
+	
+<?php
+
+$res = sql_select("*", "plantilles", "area = ".$area["id"], array(), "ordre");
+
+echo '<ol start="0">';
+
+$n = 0;
+$tema = sql_fetch($res);
+while ($tema) {
+	$nexttema = sql_fetch($res);
+	echo '<li style="padding:2px" class="'.($n % 2 ? 'odd-row' : 'even-row').'">';
+	if ($tema["ordre"] == 0) {
+		echo '<p>Títol de la pàgina i cicle</p>';
+	}
+	if (!$nexttema) {
+		echo '<div style="float:right">';
+		echo '<input name="del" type="image" src="#CHEMIN{img/del.png}" style="height:30px;width:30px" alt="Elimina" title="Elimina el darrer tema" /> ';
+		echo '</div>';
+	}
+	echo '<p><input style="width:400px" type="text" name="titol'.$tema['id'].'" value="'.$tema['titol'].'" /></p>';
+	echo '<p class="normaltext"><textarea name="text'.$tema['id'].'" cols="70">'.$tema["text"].'</textarea></p>';
+	echo '</li>';
+	$n++;
+	$tema = $nexttema;
+}
+
+echo '</ol>';
+
+?>
+	<div style="clear: both; margin-bottom: 20px; text-align:right"><input name="add" type="image" src="#CHEMIN{img/add.png}" style="height:30px;width:30px" alt="Afegeix" title="Afegeix un nou tema" /></div>
+	<p style="text-align:right">
+		<input type="submit" name="savereturn" value="Desa els canvis" />
+	</p>
+	</form>
+	
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

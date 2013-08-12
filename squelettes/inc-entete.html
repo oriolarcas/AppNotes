@@ -1,0 +1,26 @@
+<div id="entete">
+<div id="title"><a rel="start home" href="#URL_SITE_SPIP/" title="<:accueil_site:>" class="accueil">[(#LOGO_SITE_SPIP|image_reduire{300,100}) ]<strong id="nom_site_spip">#NOM_SITE_SPIP</strong></a></div>
+#MENU_LANG
+<div id="recherche">
+	<form action="[(#URL_PAGE{recherche})]" method="get">
+		<input type="hidden" name="page" value="recherche" />
+		<input type="text" name="cerca" />
+		<input type="submit" name="send" value="Cerca" />
+	</form>
+</div>
+<div id="menu">
+<BOUCLE_r(RUBRIQUES){id_rubrique}{tout}>
+#SET{secteur,#ID_SECTEUR}
+</BOUCLE_r>
+#SET{secteur,0}
+<//B_r>
+<BOUCLE_s(RUBRIQUES){racine}{par titre}{tout}>
+<BOUCLE_m(MOTS){id_mot=1}{id_rubrique}>
+[(#SESSION{statut}|=={0minirezo}|oui)<span class="menu-item menu-[(#GET{secteur}|=={#_s:ID_RUBRIQUE}|?{'on','off'})]"><a href="#_s:URL_RUBRIQUE">[(#_s:TITRE|supprimer_numero)]</a></span>]
+</BOUCLE_m>
+<span class="menu-item menu-[(#GET{secteur}|=={#_s:ID_RUBRIQUE}|?{'on','off'})]"><a href="#_s:URL_RUBRIQUE">[(#_s:TITRE|supprimer_numero)]</a></span>
+<//B_m>
+</BOUCLE_s>
+</div>
+</div>
+

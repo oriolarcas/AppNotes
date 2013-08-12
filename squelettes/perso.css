@@ -1,0 +1,179 @@
+
+/* Estil general */
+
+body {
+	padding: 0px;
+	margin: 0px;
+	background-color: #fff;
+	font-family: Arial, Sans, sans-serif;
+	background: url('img/fons.png') no-repeat #fff;
+}
+
+img {
+	vertical-align: middle;
+}
+
+a:link {
+	color: #000;
+}
+
+a:active {
+	color: #880;
+}
+
+a:visited {
+	color: #000;
+}
+
+a:hover {
+	text-decoration: none;
+}
+
+.strongtext {
+	font-weight: bold;
+}
+
+.normaltext {
+	font-weight: normal;
+}
+
+/*
+#spip-admin {
+	display: none !important;
+}
+*/
+
+/* Elements principals */
+
+#page {
+	width: 800px;
+	padding: 10px 10px;
+	margin: 20px auto 10px;
+	border: 1px solid #000;
+	background-color: #fff;
+}
+
+#entete {
+	background-color: #ee6;
+	padding: 5px 5px 0px;
+	border-bottom: 1px solid #000;
+}
+
+#pied {
+	text-align: center;
+	clear: both;
+	margin-top: 50px;
+}
+
+#maincontent {
+	float: left;
+	width: 60%;
+	margin: 10px 0px;
+}
+
+#rightbar {
+	float: right;
+	width: 35%;
+	background-color: #ee6;
+	border: 1px solid #000;
+	margin: 10px 0px;
+	padding: 5px;
+}
+
+/* Decoració */
+
+.even-row {
+	background-color: #ffc;
+}
+
+.odd-row {
+	background-color: #fff;
+}
+
+.highlight-row {
+	background-color: #ee6;
+}
+
+/* Menu */
+
+#title {
+	font-size: 16pt;
+	text-align: center;
+}
+
+#menu, #recherche {
+	padding: 0px 0px 10px 10px;
+	margin-top: 20px;
+}
+
+#menu .menu-item {
+	border: 1px solid #000;
+	border-radius: 0.3em 0.3em 0 0;
+	text-align: center;
+	padding: 5px 5px 10px 5px;
+}
+
+#menu .menu-on {
+	background-color: #fff;
+}
+
+#menu .menu-off {
+	background-color: #ddd;
+}
+
+#menu .menu-item a {
+	padding: 10px;
+}
+
+#recherche {
+	float:right;
+}
+
+/* Informes */
+
+.llista-arees {
+	position: relative;
+	width: 60px;
+	border: 1px solid #000;
+	padding: 2px;
+}
+
+.llista-arees:hover {
+	background-color: #ee6;
+}
+
+.llista-arees ul {
+	background-color: #fff;
+	margin: 0px;
+	padding: 0px;
+	position: absolute;
+	border: 1px solid #000;
+}
+
+.llista-arees > ul {
+	display: none;
+}
+
+.llista-arees:hover > ul {
+	width: 200px;
+	display: block;
+	top: -80px;
+	left: 64px;
+}
+
+.llista-arees li {
+	list-style-type: none;
+	background-color: #fff;
+	/*cursor: pointer;*/
+	padding: 2px;
+	color: #666;
+}
+
+.llista-arees li.activa {
+	color: #000;
+}
+
+.llista-arees li.activa:hover {
+	background-color: #ee6;
+}
+

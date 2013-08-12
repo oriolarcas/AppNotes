@@ -1,0 +1,139 @@
+[(#REM)
+	Classe
+]
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<?php
+include_once("appnotes/util.php");
+$res = sql_select("*", "classes", "id = [(#ENV{id_classe})]");
+$classe = sql_fetch($res);
+$ispost = false;
+if (isset($_POST['envia'])) {
+	$ispost = true;
+	$ids = sql_allfetsel("id", "alumnes", "classe = ".($classe["id"]), array(), array("cognom1", "cognom2", "nom"));
+	foreach($ids as $res) {
+		$id = $res['id'];
+		if (isset($_POST['tutor_'.$id]) && isset($_POST['tutor2_'.$id])) {
+			$tutor = $_POST['tutor_'.$id];
+			$tutor2 = $_POST['tutor2_'.$id];
+			$updok = sql_updateq("alumnes",
+				array("tutor" => $tutor, "tutor2" => $tutor2),
+				array("id = ".$id));
+			if (!$updok)
+				break;
+		}
+	}
+}
+
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_a(RUBRIQUES){id_rubrique=5}{tout}>
+	&gt; <a href="#_a:URL_RUBRIQUE">[(#_a:TITRE|supprimer_numero)]</a>
+	</BOUCLE_a>
+	<BOUCLE_p(RUBRIQUES){id_rubrique=12}{tout}>
+	&gt; <a href="#_p:URL_RUBRIQUE">[(#_p:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p>
+	<BOUCLE_r(RUBRIQUES){id_rubrique}{tout}>
+	&gt; #_r:TITRE
+	</BOUCLE_r>
+	</div>
+
+	<h1><?php echo $classe["nom"]; ?> (<?php 
+$cursos = get_cursos();
+echo $cursos[$classe["curs"]]." ".$classe["classe"];
+?>)</h1>
+
+<?php if ($ispost && $updok) { ?>
+	<p style="color:#080">La informació sobre els tutors s'ha desat correctament.</p>
+<?php 
+} else if ($ispost) { ?>
+	<p style="color:#800">Error en desar la informació sobre els tutors!</p>
+<?php } ?>
+
+	<form action="[(#URL_RUBRIQUE{17})]&id_classe=<?php echo $classe['id']; ?>" method="post">
+	<table style="width:100%;text-align:left">
+		<tr>
+			<th></th>
+			<th>Alumne</th>
+			<th>Primer/a tutor/a</th>
+			<th>Segon/a tutor/a</th>
+		</tr>
+<?php
+
+$res = sql_select(array("id", "nom"), "arees", "curs = ".($classe["curs"]));
+
+$tutors = array();
+
+<BOUCLE_u(AUTEURS){tout}>
+	$tutors[#ID_AUTEUR] = "#NOM";
+</BOUCLE_u>
+
+$res = sql_select("*", "alumnes", "classe = ".($classe["id"]), array(), array("cognom1", "cognom2", "nom"));
+
+$n = 0;
+while ($al = sql_fetch($res)) {
+	$n++;
+	if ($ressalta == $al["id"])
+		echo '<tr class="highlight-row"><td style="text-align:right"><a name="mostra">'.$n.'.</a></td>';
+	else
+		echo '<tr class="'.($n % 2 ? 'odd-row' : 'even-row').'"><td style="text-align:right">'.$n.'.</td>';
+	echo "<td>".$al["nom"]." ".$al["cognom1"]." ".$al["cognom2"]."</td>";
+	echo '<td><select id="lista'.$n.'" name="tutor_'.$al['id'].'">';
+	foreach ($tutors as $idtut => $tutor) {
+		echo '<option value="'.$idtut.'"';
+		if ($idtut == $al['tutor'])
+			echo ' selected="selected"';
+		echo '>'.$tutor.'</option>';
+	}
+	echo '</select> <img alt="Copia a sota" title="Copia a sota" src="#CHEMIN{img/copy_down.png}" style="height:20px;width:20px" onclick="javascript:copydown(\'lista\','.$n.');" /></td>';
+	echo '<td><select id="listb'.$n.'" name="tutor2_'.$al['id'].'">';
+	echo '<option value="-1"';
+	if (empty($al['tutor2']))
+		echo ' selected="selected"';
+	echo '>&lt;cap&gt;</option>';
+	foreach ($tutors as $idtut => $tutor) {
+		echo '<option value="'.$idtut.'"';
+		if ($idtut == $al['tutor2'])
+			echo ' selected="selected"';
+		echo '>'.$tutor.'</option>';
+	}
+	echo '</select> <img alt="Copia a sota" title="Copia a sota" src="#CHEMIN{img/copy_down.png}" style="height:20px;width:20px" onclick="javascript:copydown(\'listb\','.$n.');" /></td>';
+	echo "</tr>\n";
+}
+
+?>
+	</table>
+	<p><input style="width:100%" name="envia" type="submit" value="Desa" /></p>
+	</form>
+
+	<script type="text/javascript">
+	var listcount = <?php echo $n; ?>;
+	function copydown(list, n) {
+		var s = $("#"+list+n).val();
+		for (i = n + 1; i <= listcount; i++) {
+			$("#"+list+i).val(s);
+		}
+	}
+	</script>
+
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

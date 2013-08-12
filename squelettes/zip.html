@@ -1,0 +1,41 @@
+[(#REM)
+	ZIP
+]
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{0}
+<?php
+
+require_once("appnotes/pdf/informe.php");
+require_once('appnotes/zip.lib.php');
+
+$zip = new zipfile();
+
+$id_classe = [(#ENV{id_classe})];
+
+$res = sql_select("id", "alumnes", "classe = ".$id_classe, array(), array("cognom1", "cognom2", "nom"));
+
+$trobats = false;
+while($alumne = sql_fetch($res)){ 
+	$nomf = nom_fitxer_informe($alumne['id']);
+	if(file_exists('appnotes/dump/'.$nomf))
+	{
+		$trobats = true;
+		$fc = file_get_contents('appnotes/dump/'.$nomf);
+		$zip->addFile($fc,$nomf,time());
+	}
+}
+
+if ($trobats) {
+	$fclasse = nom_canonic_classe($id_classe).'_'.$id_classe.'.zip';
+	$f = fopen('appnotes/dump/'.$fclasse,'w');
+	fwrite($f,$zip->file());
+	fclose($f);
+}
+
+?>[(#HTTP_HEADER{Content-type: text/xml[; charset=(#CHARSET)]})]<?php
+
+echo "<report>\n";
+echo "<result>ok</result>\n";
+echo "</report>\n";
+?>
