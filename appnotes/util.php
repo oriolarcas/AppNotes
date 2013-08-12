@@ -257,4 +257,22 @@ function check_access($id_alumne, $id_area, $id_curs, $id_auteur) {
 	return $auto;
 }
 
+function entity_dec($ent) {
+	return html_entity_decode($ent, ENT_COMPAT | ENT_HTML401,
+		'ISO-8859-15');
+}
+
+function neteja_text($text) {
+	$tr = array(
+		entity_dec('&#8217;') => '\'', // apòstrof
+		entity_dec('&#8226;') => '·', // punt volat
+		entity_dec('&#8230;') => '...', // tres punts
+		entity_dec('&acute;') => '\'', // accent obert (apòstrof)
+		entity_dec('&#8211;') => '-', // guió llarg
+		entity_dec('&#8220;') => '"', // cometes inicials
+		entity_dec('&#8221;') => '"' // cometes finals
+		);
+	return strtr($text, $tr);
+}
+
 ?>

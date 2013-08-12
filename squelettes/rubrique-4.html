@@ -42,7 +42,7 @@ if (isset($_POST["savereturn"]) || isset($_POST["segarea"]) || isset($_POST["seg
 	
 		$nobser = "";
 		if (isset($_POST["obser"]))
-			$nobser = $_POST["obser"];
+			$nobser = neteja_text($_POST["obser"]);
 		$updok = (sql_updateq("informes",
 			array(
 				"actitud" => $nact,
