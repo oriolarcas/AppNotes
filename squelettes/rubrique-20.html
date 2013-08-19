@@ -1,0 +1,94 @@
+[(#REM)
+	Alumnes
+]
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+<?php
+include_once("appnotes/util.php");
+
+$result = 0;
+$msg = "";
+if (isset($_POST["reinicia"])) {
+	$nal = sql_update("notes", array("nota" => -1));
+	if ($nal === FALSE) {
+		$msg = "Error reiniciant notes.";
+		$result = 2;
+	} else {
+		$result = 1;
+	}
+	if ($result == 1) {
+		$nal = sql_update("informes", array("actitud" => "''", "obser" => "''"));
+		if ($nal === FALSE) {
+			$msg = "Error reiniciant actitud i observacions.";
+			$result = 2;
+		} else {
+			$result = 1;
+		}
+	}
+	if ($result == 1) {
+		$nal = sql_update("alumnes", array("nivellpers" => "''"));
+		if ($nal === FALSE) {
+			$msg = "Error esborrant nivell personal.";
+			$result = 2;
+		} else {
+			$msg = "S'han reiniciat les notes.";
+			$result = 1;
+		}
+	}
+}
+
+?>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_p(RUBRIQUES){id_rubrique=5}{tout}>
+	&gt; <a href="#_p:URL_RUBRIQUE">[(#_p:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p>
+	<BOUCLE_q(RUBRIQUES){id_rubrique=12}{tout}>
+	&gt; <a href="#_q:URL_RUBRIQUE">[(#_q:TITRE|supprimer_numero)]</a>
+	</BOUCLE_q>
+	<BOUCLE_r(RUBRIQUES){id_rubrique}{tout}>
+	&gt; [(#_r:TITRE|supprimer_numero)]
+	</BOUCLE_r>
+	</div>
+	
+	<h1>Informes</h1>
+	
+<?php if ($result == 1) { ?>
+	<div style="border: 2px #0d0 solid; background: #cfc; padding: 5px; margin-bottom:20px">
+<?php echo $msg; ?>
+	</div>
+<?php } else if ($result == 2) { ?>
+	<div style="border: 2px #d00 solid; background: #fcc; padding: 5px; margin-bottom:20px">
+<?php echo $msg; ?>
+	</div>
+<?php } ?>
+
+	<div style="background: url(squelettes/img/caution.png); padding: 20px">
+	<div style="background: #fff; padding: 10px">
+	<form action="[(#URL_RUBRIQUE{20})]" method="post">
+		<p>Atenció: es reiniciaran totes les notes dels alumnes actuals!</p>
+		<p><input type="submit" name="reinicia" value="Reinicia" /></p>
+	</form>
+	</div>
+	</div>
+
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>
