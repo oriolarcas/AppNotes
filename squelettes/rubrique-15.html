@@ -1,0 +1,70 @@
+[(#REM)
+	Administració
+]
+<INCLURE{fond=inc-verifier}{id_rubrique}>
+<?php
+include_once("appnotes/util.php");
+
+$updated = false;
+$updok = true;
+
+if (isset($_POST['submit_data_informe'])) {
+	$val = $_POST['data_informe'];
+	$updok = $updok && (sql_updateq("opcions", array("valor" => $val), "nom = 'data_informe'") !== false);
+	$updated = true;
+}
+?>
+[(#REM)
+	Un cache plus court, pour la boucle syndic_articles
+]#CACHE{3600}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
+<head>
+<title>[(#NOM_SITE_SPIP|textebrut)]</title>
+[<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
+<INCLURE{fond=inc-head}>
+</head>
+
+<body class="page_sommaire">
+<div id="page">
+	<INCLURE{fond=inc-entete}{id_rubrique}>
+	
+	<div id="hierarchie">
+	<a href="[(#URL_RUBRIQUE{0})]">Inici</a>
+	<BOUCLE_p(RUBRIQUES){id_rubrique=6}{tout}>
+	&gt; <a href="#_p:URL_RUBRIQUE">[(#_p:TITRE|supprimer_numero)]</a>
+	</BOUCLE_p>
+	<BOUCLE_r(RUBRIQUES){id_rubrique}{tout}>
+	&gt; [(#_r:TITRE|supprimer_numero)]
+	</BOUCLE_r>
+	</div>
+	
+	<h1>Modificar format</h1>
+
+<?php if (!$updok) { ?>
+	<p style="color:#800">Error en desar els canvis!</p>
+<?php } else if ($updated) { ?>
+	<p style="color:#080">Canvis desats.</p>
+<?php } ?>
+
+	<form action="[(#URL_RUBRIQUE{15})]" method="post">
+	<table>
+<?php
+
+$data_informe = sql_fetsel("*", "opcions", "nom = 'data_informe'");
+
+echo '<tr>';
+echo '<td>Data informe:</td>';
+echo '<td><input style="width:300px" name="data_informe" type="text" value="'.$data_informe['valor'].'" /></td>';
+echo '<td><input name="submit_data_informe" type="submit" value="Desa" /></td>';
+echo '</tr>';
+?>
+	</table>
+	</form>
+
+	[(#REM) Pied de page ]
+	<INCLURE{fond=inc-pied}{skel=#SQUELETTE}>
+	
+</div><!--#page-->
+</body>
+</html>

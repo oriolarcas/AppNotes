@@ -60,7 +60,8 @@ function dades($id) {
 
 // array(data)
 function dades_informe() {
-	return array("Juny 2011");
+	$val = sql_fetsel("valor", "opcions", "nom = 'data_informe'");
+	return array($val['valor']);
 }
 
 function arees($id) {
