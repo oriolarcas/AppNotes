@@ -10,12 +10,17 @@ include_once("appnotes/util.php");
 $res = sql_select("*", "classes", "id = [(#ENV{id_classe})]");
 $classe = sql_fetch($res);
 $ispost = false;
+$msg = "Error en desar la informació!";
 if (isset($_POST['envia'])) {
 	$ispost = true;
 	$ids = sql_allfetsel("id", "alumnes", "classe = ".($classe["id"]), array(), array("cognom1", "cognom2", "nom"));
 	foreach ($ids as $res) {
 		$id = $res['id'];
-		if (isset($_POST['tutor_'.$id]) && isset($_POST['tutor2_'.$id])) {
+		if (isset($_POST['nom'.$id]) &&
+				isset($_POST['cognom1'.$id]) && 
+				isset($_POST['cognom2'.$id]) && 
+				isset($_POST['tutor_'.$id]) &&
+				isset($_POST['tutor2_'.$id])) {
 			$nom = $_POST['nom_'.$id];
 			$cognom1 = $_POST['cognom1_'.$id];
 			$cognom2 = $_POST['cognom2_'.$id];
@@ -34,13 +39,77 @@ if (isset($_POST['envia'])) {
 				break;
 		}
 	}
-} else if (isset($_POST)) {
+} else if (isset($_POST['add_x']) && isset($_POST['add_y'])) {
+	$ispost = true;
+	$nom = $_POST['nou_nom'];
+	$cognom1 = $_POST['nou_cognom1'];
+	$cognom2 = $_POST['nou_cognom2'];
+	
+	$arees = array();
+	$res = sql_select("*", "arees");
+	while ($ar = sql_fetch($res)) {
+		$res2 = sql_select("*", "plantilles", array("area = ".$ar["id"], "ordre > 0"));
+		while ($pl = sql_fetch($res2)) {
+			$arees[$ar["curs"]][$ar["id"]][] = $pl["id"];
+		}
+	}
+	$curs = $classe['curs'];
+
+	$updok = sql_insertq('alumnes', array(
+				'nom' => $nom,
+				'cognom1' => $cognom1,
+				'cognom2' => $cognom2,
+				'classe' => $classe['id'],
+				'nivellpers' => "",
+				'informe' => "",
+				'tutor' => #SESSION{id_auteur},
+				'tutor2' => -1
+				));
+	if (!$updok) {
+		$msg = "Error mentre s'afegien les dades del nou alumne.";
+	} else {
+		$idal = mysql_insert_id();
+		
+		foreach ($arees[$curs] as $arid => $area) {
+			foreach ($area as $tema) {
+				$updok = sql_insertq('notes', array(
+					'alumne' => $idal,
+					'tema' => $tema,
+					'nota' => -1
+					));
+				if (!$updok) {
+					$result = 2;
+					$msg = "Error mentre es processaven les notes del nou alumne.";
+					break;
+				}
+			}
+			if ($result == 2) {
+				break;
+			}
+			$updok = sql_insertq('informes', array(
+				'alumne' => $idal,
+				'area' => $arid,
+				'actitud' => "0,0,0,0,0,0",
+				'obser' => ""
+				));
+			if (!$updok) {
+				$result = 2;
+				$msg = "Error mentre es processaven els informes del nou alumne.";
+				break;
+			}
+		}
+	}
+} else if (isset($_POST) && count($_POST) > 0) {
 	$ispost = true;
 	foreach ($_POST as $key => $val) {
-		$r = preg_match('/^del_([0-9]+)_[x]/', $key, $matches);
+		$r = preg_match('/^del_([0-9]+)_x/', $key, $matches);
 		if ($r) {
 			$id = $matches[1];
-			$updok = sql_delete('alumnes', 'id = '.$id);
+			$updok = sql_delete('notes', 'alumne = '.$id);
+			if ($updok)
+				$updok = sql_delete('informes', 'alumne = '.$id);
+			if ($updok)
+				$updok = sql_delete('alumnes', 'id = '.$id);
 			break;
 		}
 	}
@@ -122,7 +191,7 @@ echo $cursos[$classe["curs"]]." ".$classe["classe"];
 	<p style="color:#080">La informació s'ha desat correctament.</p>
 <?php 
 } else if ($ispost) { ?>
-	<p style="color:#800">Error en desar la informació!</p>
+	<p style="color:#800"><?php echo $msg; ?></p>
 <?php } ?>
 
 	<form action="[(#URL_RUBRIQUE{17})]&id_classe=<?php echo $classe['id']; ?>" method="post">
@@ -191,8 +260,14 @@ while ($al = sql_fetch($res)) {
 }
 
 ?>
+		<tr>
+		<td></td>
+		<td><input name="nou_nom" value="(nom)" /></td>
+		<td><input name="nou_cognom1" value="(primer cognom)" /></td>
+		<td><input name="nou_cognom2" value="(segon cognom)" /></td>
+		<td><input name="add" type="image" src="#CHEMIN{img/add_small.png}" style="height:22px;width:22px" alt="Afegeix" title="Afegeix un nou alumne" /></td>
+		</tr>
 	</table>
-	<p style="text-align:right"><input name="add" type="image" src="#CHEMIN{img/add.png}" style="height:32px;width:32px" alt="Afegeix" title="Afegeix un nou alumne" /></p>
 	<p><input style="width:100%" name="envia" type="submit" value="Desa" /></p>
 	</form>
 

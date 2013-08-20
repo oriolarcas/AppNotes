@@ -32,8 +32,11 @@ if (isset($_FILES["alumnes"])) {
 	}
 	if ($result == 1) {
 		$ndal = sql_delete("alumnes", "");
+		sql_alter('TABLE alumnes AUTO_INCREMENT = 1');
 		sql_delete("informes", "");
+		sql_alter('TABLE informes AUTO_INCREMENT = 1');
 		sql_delete("notes", "");
+		sql_alter('TABLE notes AUTO_INCREMENT = 1');
 		$arees = array();
 		$res = sql_select("*", "arees");
 		while ($ar = sql_fetch($res)) {

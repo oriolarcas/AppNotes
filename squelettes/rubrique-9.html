@@ -12,7 +12,7 @@ $clean = ([(#ENV{clean, 'false'})] !== false);
 if (is_dir($dir)) {
 	$dh = opendir($dir);
 	while (($file = readdir($dh)) !== false && !$informes_generats) {
-		if ($file != '.' && $file != '..') {
+		if ($file != '.' && $file != '..' && $file != 'remove.txt') {
 			if ($clean) {
 				if (!@unlink($dir.'/'.$file)) {
 					$informes_generats = true;
