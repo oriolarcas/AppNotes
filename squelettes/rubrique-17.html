@@ -16,10 +16,19 @@ if (isset($_POST['envia'])) {
 	foreach($ids as $res) {
 		$id = $res['id'];
 		if (isset($_POST['tutor_'.$id]) && isset($_POST['tutor2_'.$id])) {
+			$nom = $_POST['nom_'.$id];
+			$cognom1 = $_POST['cognom1_'.$id];
+			$cognom2 = $_POST['cognom2_'.$id];
 			$tutor = $_POST['tutor_'.$id];
 			$tutor2 = $_POST['tutor2_'.$id];
+			
 			$updok = sql_updateq("alumnes",
-				array("tutor" => $tutor, "tutor2" => $tutor2),
+				array(
+					"nom" => $nom,
+					"cognom1" => $cognom1,
+					"cognom2" => $cognom2,
+					"tutor" => $tutor,
+					"tutor2" => $tutor2),
 				array("id = ".$id));
 			if (!$updok)
 				break;
@@ -34,6 +43,45 @@ if (isset($_POST['envia'])) {
 <title>[(#NOM_SITE_SPIP|textebrut)]</title>
 [<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
 <INCLURE{fond=inc-head}>
+<style type="text/css">
+.editable-cell {
+	width: 230px;
+}
+.editable-container {
+	position:relative;
+}
+.editable-textbox {
+	border: 1px solid #000;
+	padding: 3px;
+	width: 230px;
+	cursor:pointer;
+}
+.floating-fields {
+	display:none;
+	background-color:#fff;
+	position:absolute;
+	top:0;
+	z-index:10000;
+	padding: 5px;
+	border: 1px solid #000;
+	width: 230px;
+}
+.floating-fields input {
+	width:175px;
+}
+.floating-buttons {
+	float:right;
+	text-align: right;
+}
+.floating-buttons img {
+	width:16px;
+	height:16px;
+	cursor:pointer;
+}
+.modified-textbox {
+	background-color: #99f;
+}
+</style>
 </head>
 
 <body class="page_sommaire">
@@ -59,10 +107,10 @@ echo $cursos[$classe["curs"]]." ".$classe["classe"];
 ?>)</h1>
 
 <?php if ($ispost && $updok) { ?>
-	<p style="color:#080">La informació sobre els tutors s'ha desat correctament.</p>
+	<p style="color:#080">La informació s'ha desat correctament.</p>
 <?php 
 } else if ($ispost) { ?>
-	<p style="color:#800">Error en desar la informació sobre els tutors!</p>
+	<p style="color:#800">Error en desar la informació!</p>
 <?php } ?>
 
 	<form action="[(#URL_RUBRIQUE{17})]&id_classe=<?php echo $classe['id']; ?>" method="post">
@@ -92,7 +140,19 @@ while ($al = sql_fetch($res)) {
 		echo '<tr class="highlight-row"><td style="text-align:right"><a name="mostra">'.$n.'.</a></td>';
 	else
 		echo '<tr class="'.($n % 2 ? 'odd-row' : 'even-row').'"><td style="text-align:right">'.$n.'.</td>';
-	echo "<td>".$al["nom"]." ".$al["cognom1"]." ".$al["cognom2"]."</td>";
+	echo "<td class=\"editable-cell\"><div class=\"editable-container\">";
+	echo "<div class=\"editable-textbox\">".$al["nom"]." ".$al["cognom1"]." ".$al["cognom2"]."</div>";
+	echo '<div class="floating-fields">';
+	echo '<div class="floating-buttons">';
+	echo '<img class="apply-button" alt="Accepta canvis" title="Accepta canvis" src="#CHEMIN{img/apply.png}" />';
+	echo '<img class="cancel-button" alt="Anul·la canvis" title="Anul·la canvis" src="#CHEMIN{img/cancel.png}" /><br />';
+	echo '<img class="reset-button" alt="Reinicia" title="Reinicia" src="#CHEMIN{img/reset.png}" />';
+	echo '</div>';
+	echo '<input type="text" name="nom_'.$al['id'].'" value="'.$al["nom"].'" /><br />';
+	echo '<input type="text" name="cognom1_'.$al['id'].'" value="'.$al["cognom1"].'" /><br />';
+	echo '<input type="text" name="cognom2_'.$al['id'].'" value="'.$al["cognom2"].'" />';
+	echo '</div></div>';
+	echo "</td>";
 	echo '<td><select id="lista'.$n.'" name="tutor_'.$al['id'].'">';
 	foreach ($tutors as $idtut => $tutor) {
 		echo '<option value="'.$idtut.'"';
@@ -100,7 +160,7 @@ while ($al = sql_fetch($res)) {
 			echo ' selected="selected"';
 		echo '>'.$tutor.'</option>';
 	}
-	echo '</select> <img alt="Copia a sota" title="Copia a sota" src="#CHEMIN{img/copy_down.png}" style="height:20px;width:20px" onclick="javascript:copydown(\'lista\','.$n.');" /></td>';
+	echo '</select> <img alt="Copia a sota" title="Copia a sota" src="#CHEMIN{img/copy_down.png}" style="height:22px;width:22px;cursor:pointer" onclick="javascript:copydown(\'lista\','.$n.');" /></td>';
 	echo '<td><select id="listb'.$n.'" name="tutor2_'.$al['id'].'">';
 	echo '<option value="-1"';
 	if (empty($al['tutor2']))
@@ -112,7 +172,7 @@ while ($al = sql_fetch($res)) {
 			echo ' selected="selected"';
 		echo '>'.$tutor.'</option>';
 	}
-	echo '</select> <img alt="Copia a sota" title="Copia a sota" src="#CHEMIN{img/copy_down.png}" style="height:20px;width:20px" onclick="javascript:copydown(\'listb\','.$n.');" /></td>';
+	echo '</select> <img alt="Copia a sota" title="Copia a sota" src="#CHEMIN{img/copy_down.png}" style="height:22px;width:22px;cursor:pointer" onclick="javascript:copydown(\'listb\','.$n.');" /></td>';
 	echo "</tr>\n";
 }
 
@@ -128,6 +188,68 @@ while ($al = sql_fetch($res)) {
 		for (i = n + 1; i <= listcount; i++) {
 			$("#"+list+i).val(s);
 		}
+	}
+	var oldvalues = [];
+	var initialvalues = [];
+	function getId(name) {
+		return name.substr(name.indexOf('_')+1);
+	}
+	$(".editable-textbox").click(function() {
+		$(".floating-fields").hide('fast');
+		var cell = $(this).parent();
+		var floatbox = cell.children(".floating-fields");
+		var id = getId(floatbox.children("input[name^='nom_']").attr('name'));
+		var nom = $.trim(floatbox.children("input[name^='nom_']").val());
+		var cognom1 = $.trim(floatbox.children("input[name^='cognom1_']").val());
+		var cognom2 = $.trim(floatbox.children("input[name^='cognom2_']").val());
+		oldvalues[id] = { nom:nom, cognom1:cognom1, cognom2:cognom2 };
+		$(this).parent().children(".floating-fields").show('fast');
+	});
+	$(".apply-button").click(function() {
+		var floatbox = $(this).parent().parent();
+		var cell = floatbox.parent();
+		var textbox = cell.children(".editable-textbox");
+		var id = getId(floatbox.children("input[name^='nom_']").attr('name'));
+		var nom = $.trim(floatbox.children("input[name^='nom_']").val());
+		var cognom1 = $.trim(floatbox.children("input[name^='cognom1_']").val());
+		var cognom2 = $.trim(floatbox.children("input[name^='cognom2_']").val());
+		textbox.html(nom + " " + cognom1 + " " + cognom2);
+		if (initialvalues[id].nom == nom &&
+				initialvalues[id].cognom1 == cognom1 &&
+				initialvalues[id].cognom2 == cognom2)
+			textbox.removeClass("modified-textbox");
+		else
+			textbox.addClass("modified-textbox");
+		floatbox.hide('fast');
+	});
+	$(".cancel-button").click(function() {
+		var floatbox = $(this).parent().parent();
+		var id = getId(floatbox.children("input[name^='nom_']").attr('name'));
+		var old = oldvalues[id];
+		floatbox.hide('fast');
+		floatbox.children("input[name^='nom_']").val(old.nom);
+		floatbox.children("input[name^='cognom1_']").val(old.cognom1);
+		floatbox.children("input[name^='cognom2_']").val(old.cognom2);
+	});
+	$(".reset-button").click(function() {
+		var floatbox = $(this).parent().parent();
+		var cell = floatbox.parent();
+		var textbox = cell.children(".editable-textbox");
+		var id = getId(floatbox.children("input[name^='nom_']").attr('name'));
+		var initial = initialvalues[id];
+		floatbox.hide('fast');
+		floatbox.children("input[name^='nom_']").val(initial.nom);
+		floatbox.children("input[name^='cognom1_']").val(initial.cognom1);
+		floatbox.children("input[name^='cognom2_']").val(initial.cognom2);
+		textbox.html(initial.nom + " " + initial.cognom1 + " " + initial.cognom2);
+		textbox.removeClass("modified-textbox");
+		floatbox.hide('fast');
+	});
+	for (i = 1; i <= listcount; i++) {
+		var nom = $.trim($("input[name='nom_"+i+"']").val());
+		var cognom1 = $.trim($("input[name='cognom1_"+i+"']").val());
+		var cognom2 = $.trim($("input[name='cognom2_"+i+"']").val());
+		initialvalues[i] = { nom:nom, cognom1:cognom1, cognom2:cognom2 };
 	}
 	</script>
 
