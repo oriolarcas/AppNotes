@@ -13,7 +13,7 @@ $ispost = false;
 if (isset($_POST['envia'])) {
 	$ispost = true;
 	$ids = sql_allfetsel("id", "alumnes", "classe = ".($classe["id"]), array(), array("cognom1", "cognom2", "nom"));
-	foreach($ids as $res) {
+	foreach ($ids as $res) {
 		$id = $res['id'];
 		if (isset($_POST['tutor_'.$id]) && isset($_POST['tutor2_'.$id])) {
 			$nom = $_POST['nom_'.$id];
@@ -34,8 +34,17 @@ if (isset($_POST['envia'])) {
 				break;
 		}
 	}
+} else if (isset($_POST)) {
+	$ispost = true;
+	foreach ($_POST as $key => $val) {
+		$r = preg_match('/^del_([0-9]+)_[x]/', $key, $matches);
+		if ($r) {
+			$id = $matches[1];
+			$updok = sql_delete('alumnes', 'id = '.$id);
+			break;
+		}
+	}
 }
-
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="#LANG" lang="#LANG" dir="#LANG_DIR">
@@ -44,6 +53,9 @@ if (isset($_POST['envia'])) {
 [<meta name="description" content="(#DESCRIPTIF_SITE_SPIP|couper{150}|textebrut)" />]
 <INCLURE{fond=inc-head}>
 <style type="text/css">
+tr:hover {
+	background-color: #ff6;
+}
 .editable-cell {
 	width: 230px;
 }
@@ -120,6 +132,7 @@ echo $cursos[$classe["curs"]]." ".$classe["classe"];
 			<th>Alumne</th>
 			<th>Primer/a tutor/a</th>
 			<th>Segon/a tutor/a</th>
+			<th></th>
 		</tr>
 <?php
 
@@ -173,11 +186,13 @@ while ($al = sql_fetch($res)) {
 		echo '>'.$tutor.'</option>';
 	}
 	echo '</select> <img alt="Copia a sota" title="Copia a sota" src="#CHEMIN{img/copy_down.png}" style="height:22px;width:22px;cursor:pointer" onclick="javascript:copydown(\'listb\','.$n.');" /></td>';
+	echo '<td><input name="del_'.$al['id'].'" type="image" src="#CHEMIN{img/del_small.png}" style="height:22px;width:22px" alt="Esborra" title="Esborra aquest alumne" /></td>';
 	echo "</tr>\n";
 }
 
 ?>
 	</table>
+	<p style="text-align:right"><input name="add" type="image" src="#CHEMIN{img/add.png}" style="height:32px;width:32px" alt="Afegeix" title="Afegeix un nou alumne" /></p>
 	<p><input style="width:100%" name="envia" type="submit" value="Desa" /></p>
 	</form>
 
@@ -245,12 +260,15 @@ while ($al = sql_fetch($res)) {
 		textbox.removeClass("modified-textbox");
 		floatbox.hide('fast');
 	});
-	for (i = 1; i <= listcount; i++) {
-		var nom = $.trim($("input[name='nom_"+i+"']").val());
-		var cognom1 = $.trim($("input[name='cognom1_"+i+"']").val());
-		var cognom2 = $.trim($("input[name='cognom2_"+i+"']").val());
-		initialvalues[i] = { nom:nom, cognom1:cognom1, cognom2:cognom2 };
-	}
+	$(".floating-fields").each(function(index) {
+		var floatbox = $(this);
+		var id = getId(floatbox.children("input[name^='nom_']").attr('name'));
+		var nom = $.trim(floatbox.children("input[name^='nom_']").val());
+		var cognom1 = $.trim(floatbox.children("input[name^='cognom1_']").val());
+		var cognom2 = $.trim(floatbox.children("input[name^='cognom2_']").val());
+		initialvalues[id] = { id:id, nom:nom, cognom1:cognom1, cognom2:cognom2 };
+	});
+	console.log(JSON.stringify(initialvalues));
 	</script>
 
 	[(#REM) Pied de page ]
